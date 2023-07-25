@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board.spring.mybatis.BoardDAO">
+	<insert id="insertBoard" parameterType="boarddto">
+		insert into board(title, contents, writer, pw, viewcount, writetime)
+		values(#{title}, #{contents}, #{writer}, #{pw}, 0, now())
+	</insert>
+	
+	<select id="getTotalBoard" resultType="int">
+		select count(*) from board
+	</select>
+	
+	<select id="pagingList" resultType="boarddto">
+		select * from board order by writetime desc limit
+		<foreach collection="array" item="limitIndex" separator=",">#{limitIndex}</foreach>
+	</select>
+	
+	<update id="plusViewcount" parameterType="int">
+		update board set viewcount=viewcount+1 where seq=#{seq}
+	</update>
+	
+	<select id="oneBoard" parameterType="int" resultType="boarddto">
+		select * from board where seq=#{seq}
+	</select>
+	
+	<delete id="deleteBoard" parameterType="int">
+		delete from board where seq=#{seq}
+	</delete>
+	
+	<update id="updateBoard" parameterType="boarddto">
+		update board set title=#{title}, contents=#{contents}, writetime=now() where seq=#{seq}
+	</update>
+	
+	<select id="searchList" parameterType="hashmap" resultType="boarddto">
+		select * from board where
+		<choose>
+			<when test="item == all">
+				title like #{colValue} or contents like #{colValue} or writer like #{colValue}
+			</when>
+			<otherwise>
+				${colName} like #{colValue}
+			</otherwise>
+		</choose>
+		order by writetime desc
+	</select>
+	
+	<resultMap type="board.spring.mybatis.BoardMemberDTO" id="boardWriterMap">
+		<id property="seq" column="seq" />
+		<result property="title" column="title" />
+		<result property="contents" column="contents" />
+		<result property="viewcount" column="viewcount" />
+		<result property="writetime" column="writetime" />
+		<result property="pw" column="b_pw" />
+		<association property="member" resultMap="memberMap" />
+	</resultMap>
+	
+	<resultMap type="board.spring.mybatis.MemberDTO" id="memberMap">
+		<id property="member_id" column="member_id" />
+		<result property="name" column="name" />
+		<result property="email" column="email" />
+		<result property="phone" column="phone" />
+		<result property="regtime" column="regtime" />
+		<result property="pw" column="m_pw" />
+	</resultMap>
+	
+	<select id="boardWriterInform" parameterType="int" resultMap="boardWriterMap">
+		select seq, title, contents, member_id, name, email, phone, regtime, b.pw b_pw, m.pw m_pw
+		from board b inner join c_member m
+		on writer=member_id
+		where seq=#{seq}
+	</select>
+</mapper>
